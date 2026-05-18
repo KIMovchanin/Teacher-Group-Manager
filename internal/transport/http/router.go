@@ -4,13 +4,25 @@ import (
 	"encoding/json"
 	"log"
 	nethttp "net/http"
+	"time"
+
+	"github.com/KIMovchanin/Teacher-Group-Manager/internal/service"
 )
+
+type studentResponse struct {
+	ID        int64  `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	CreatedAt string `json:"created_at"`
+}
 
 func NewRouter() *nethttp.ServeMux {
 	mux := nethttp.NewServeMux()
 
+	studentService := service.NewStudentService()
+
 	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/students", studentsHandler)
+	mux.HandleFunc("/students", studentsHandler(studentService))
 
 	return mux
 }
@@ -24,36 +36,37 @@ func healthHandler(w nethttp.ResponseWriter, r *nethttp.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(nethttp.StatusOK)
 
-	responce := map[string]string{"status": "ok"}
+	response := map[string]string{"status": "ok"}
 
-	if err := json.NewEncoder(w).Encode(responce); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Println("failed to encode health responce:", err)
 	}
 }
 
-func studentsHandler(w nethttp.ResponseWriter, r *nethttp.Request) {
-	if r.Method != nethttp.MethodGet {
-		nethttp.Error(w, "method not allowed", nethttp.StatusMethodNotAllowed)
-		return
-	}
+func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		if r.Method != nethttp.MethodGet {
+			nethttp.Error(w, "method not allowed", nethttp.StatusMethodNotAllowed)
+			return
+		}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(nethttp.StatusOK)
+		students := studentService.ListStudents()
 
-	responce := []map[string]any{
-		{
-			"id":         1,
-			"first_name": "Ivan",
-			"last_name":  "Petrov",
-		},
-		{
-			"id":         2,
-			"first_name": "Anna",
-			"last_name":  "Sidorova",
-		},
-	}
+		response := make([]studentResponse, 0, len(students))
+		for _, student := range students {
+			response = append(response, studentResponse{
+				ID:        student.ID,
+				FirstName: student.FirstName,
+				LastName:  student.LastName,
+				CreatedAt: student.CreatedAt.Format(time.RFC3339),
+			})
+		}
 
-	if err := json.NewEncoder(w).Encode(responce); err != nil {
-		log.Println("failed to encode students response:", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(nethttp.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Println("failed to encode students response:", err)
+		}
 	}
 }
