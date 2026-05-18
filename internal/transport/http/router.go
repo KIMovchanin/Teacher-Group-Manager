@@ -21,6 +21,28 @@ type createStudentRequest struct {
 	LastName  string `json:"last_name"`
 }
 
+func writeJSON(w nethttp.ResponseWriter, statusCode int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Println("failed to encode json response:", err)
+	}
+}
+
+func writeJSONError(w nethttp.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	response := map[string]string{
+		"error": message,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Println("failed to encode error response:", err)
+	}
+}
+
 func NewRouter() *nethttp.ServeMux {
 	mux := nethttp.NewServeMux()
 
@@ -38,14 +60,9 @@ func healthHandler(w nethttp.ResponseWriter, r *nethttp.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(nethttp.StatusOK)
-
 	response := map[string]string{"status": "ok"}
+	writeJSON(w, nethttp.StatusOK, response)
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Println("failed to encode health responce:", err)
-	}
 }
 
 func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc {
@@ -64,25 +81,21 @@ func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc
 				})
 			}
 
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(nethttp.StatusOK)
-
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				log.Println("failed to encode students response:", err)
-			}
+			writeJSON(w, nethttp.StatusOK, response)
 
 		case nethttp.MethodPost:
 			var request createStudentRequest
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-				nethttp.Error(w, "invalid json body", nethttp.StatusBadRequest)
-				return
-			}
-			if request.FirstName == "" || request.LastName == "" {
-				nethttp.Error(w, "first_name and last_name are required", nethttp.StatusBadRequest)
+				writeJSONError(w, nethttp.StatusBadRequest, "invalid json body")
 				return
 			}
 
-			student := studentService.CreateStudent(request.FirstName, request.LastName)
+			student, err := studentService.CreateStudent(request.FirstName, request.LastName)
+
+			if err != nil {
+				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+				return
+			}
 
 			response := studentResponse{
 				ID:        student.ID,
@@ -91,15 +104,10 @@ func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc
 				CreatedAt: student.CreatedAt.Format(time.RFC3339),
 			}
 
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(nethttp.StatusCreated)
-
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				log.Println("failed to encode created student response:", err)
-			}
+			writeJSON(w, nethttp.StatusCreated, response)
 
 		default:
-			nethttp.Error(w, "method not allowed", nethttp.StatusMethodNotAllowed)
+			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
 		}
 	}
 }

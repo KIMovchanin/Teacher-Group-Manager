@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"time"
 
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/domain"
@@ -30,11 +31,15 @@ func (s *StudentService) ListStudents() []domain.Student {
 	}
 }
 
-func (s *StudentService) CreateStudent(firstName, lastName string) domain.Student {
+func (s *StudentService) CreateStudent(firstName, lastName string) (domain.Student, error) {
+	if firstName == "" || lastName == "" {
+		return domain.Student{}, errors.New("first name and last name are required")
+	}
+
 	return domain.Student{
 		ID:        3,
 		FirstName: firstName,
 		LastName:  lastName,
 		CreatedAt: time.Now(),
-	}
+	}, nil
 }
