@@ -29,3 +29,12 @@ func (s *StudentService) ListStudents() []domain.Student {
 		},
 	}
 }
+
+func (s *StudentService) CreateStudent(firstName, lastName string) domain.Student {
+	return domain.Student{
+		ID:        3,
+		FirstName: firstName,
+		LastName:  lastName,
+		CreatedAt: time.Now(),
+	}
+}
