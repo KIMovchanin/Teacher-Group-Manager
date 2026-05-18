@@ -6,6 +6,7 @@ import (
 	nethttp "net/http"
 	"time"
 
+	"github.com/KIMovchanin/Teacher-Group-Manager/internal/repository"
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/service"
 )
 
@@ -46,7 +47,8 @@ func writeJSONError(w nethttp.ResponseWriter, statusCode int, message string) {
 func NewRouter() *nethttp.ServeMux {
 	mux := nethttp.NewServeMux()
 
-	studentService := service.NewStudentService()
+	studentRepository := repository.NewStudentMemoryRepository()
+	studentService := service.NewStudentService(studentRepository)
 
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/students", studentsHandler(studentService))
