@@ -4,14 +4,18 @@ import (
 	"errors"
 
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/domain"
-	"github.com/KIMovchanin/Teacher-Group-Manager/internal/repository"
 )
 
-type StudentService struct {
-	studentRepository *repository.StudentMemoryRepository
+type StudentRepository interface {
+	ListStudents() []domain.Student
+	CreateStudent(firstName, lastName string) domain.Student
 }
 
-func NewStudentService(studentRepository *repository.StudentMemoryRepository) *StudentService {
+type StudentService struct {
+	studentRepository StudentRepository
+}
+
+func NewStudentService(studentRepository StudentRepository) *StudentService {
 	return &StudentService{
 		studentRepository: studentRepository,
 	}

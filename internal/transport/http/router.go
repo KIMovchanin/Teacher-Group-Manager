@@ -58,7 +58,7 @@ func NewRouter() *nethttp.ServeMux {
 
 func healthHandler(w nethttp.ResponseWriter, r *nethttp.Request) {
 	if r.Method != nethttp.MethodGet {
-		nethttp.Error(w, "method not allowed", nethttp.StatusMethodNotAllowed)
+		writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
