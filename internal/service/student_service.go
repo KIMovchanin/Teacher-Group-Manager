@@ -9,6 +9,7 @@ import (
 type StudentRepository interface {
 	ListStudents() []domain.Student
 	CreateStudent(firstName, lastName string) domain.Student
+	GetStudentByID(id int64) (domain.Student, bool)
 }
 
 type StudentService struct {
@@ -31,4 +32,12 @@ func (s *StudentService) CreateStudent(firstName, lastName string) (domain.Stude
 	}
 
 	return s.studentRepository.CreateStudent(firstName, lastName), nil
+}
+
+func (s *StudentService) GetStudentByID(id int64) (domain.Student, error) {
+	student, found := s.studentRepository.GetStudentByID(id)
+	if !found {
+		return domain.Student{}, errors.New("student not found")
+	}
+	return student, nil
 }

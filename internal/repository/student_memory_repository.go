@@ -48,3 +48,13 @@ func (r *StudentMemoryRepository) CreateStudent(firstName, lastName string) doma
 
 	return student
 }
+
+func (r *StudentMemoryRepository) GetStudentByID(id int64) (domain.Student, bool) {
+	for _, student := range r.students {
+		if student.ID == id {
+			return student, true
+		}
+	}
+
+	return domain.Student{}, false
+}

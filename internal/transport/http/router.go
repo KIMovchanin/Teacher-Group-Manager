@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	nethttp "net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/repository"
@@ -52,6 +54,7 @@ func NewRouter() *nethttp.ServeMux {
 
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/students", studentsHandler(studentService))
+	mux.HandleFunc("/students/", studentByIDHandler(studentService))
 
 	return mux
 }
@@ -110,6 +113,47 @@ func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc
 
 		default:
 			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
+		}
+	}
+}
+
+func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		switch r.Method {
+		case nethttp.MethodGet:
+			idText := strings.TrimPrefix(r.URL.Path, "/students/")
+			if idText == "" {
+				writeJSONError(w, nethttp.StatusBadRequest, "student id is required")
+				return
+			}
+
+			id, err := strconv.ParseInt(idText, 10, 64)
+			if err != nil {
+				writeJSONError(w, nethttp.StatusBadRequest, "invalid student id")
+				return
+			}
+
+			student, err := studentService.GetStudentByID(id)
+			if err != nil {
+				writeJSONError(w, nethttp.StatusNotFound, err.Error())
+				return
+			}
+
+			response := studentResponse{
+				ID:        student.ID,
+				FirstName: student.FirstName,
+				LastName:  student.LastName,
+				CreatedAt: student.CreatedAt.Format(time.RFC3339),
+			}
+
+			writeJSON(w, nethttp.StatusOK, response)
+
+		case nethttp.MethodPost:
+			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method POST is not created at")
+
+		default:
+			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
+			return
 		}
 	}
 }
