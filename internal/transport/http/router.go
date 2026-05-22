@@ -148,8 +148,26 @@ func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerF
 
 			writeJSON(w, nethttp.StatusOK, response)
 
-		case nethttp.MethodPost:
-			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method POST is not created at")
+		case nethttp.MethodDelete:
+			idText := strings.TrimPrefix(r.URL.Path, "/students/")
+			if idText == "" {
+				writeJSONError(w, nethttp.StatusBadRequest, "student id is required")
+				return
+			}
+
+			id, err := strconv.ParseInt(idText, 10, 64)
+			if err != nil {
+				writeJSONError(w, nethttp.StatusNotFound, err.Error())
+				return
+			}
+
+			if err := studentService.DeleteStudent(id); err != nil {
+				writeJSONError(w, nethttp.StatusNotFound, err.Error())
+				return
+			}
+
+			// 204 No Content
+			w.WriteHeader(nethttp.StatusNoContent)
 
 		default:
 			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")

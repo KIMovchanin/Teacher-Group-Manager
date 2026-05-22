@@ -58,3 +58,14 @@ func (r *StudentMemoryRepository) GetStudentByID(id int64) (domain.Student, bool
 
 	return domain.Student{}, false
 }
+
+func (r *StudentMemoryRepository) DeleteStudent(id int64) bool {
+	for index, student := range r.students {
+		if id == student.ID {
+			// в кусок от students до найденного индекса добавляю всё после него
+			r.students = append(r.students[:index], r.students[index+1:]...)
+			return true
+		}
+	}
+	return false
+}

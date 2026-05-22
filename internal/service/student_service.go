@@ -10,6 +10,7 @@ type StudentRepository interface {
 	ListStudents() []domain.Student
 	CreateStudent(firstName, lastName string) domain.Student
 	GetStudentByID(id int64) (domain.Student, bool)
+	DeleteStudent(id int64) bool
 }
 
 type StudentService struct {
@@ -40,4 +41,12 @@ func (s *StudentService) GetStudentByID(id int64) (domain.Student, error) {
 		return domain.Student{}, errors.New("student not found")
 	}
 	return student, nil
+}
+
+func (s *StudentService) DeleteStudent(id int64) error {
+	deleted := s.studentRepository.DeleteStudent(id)
+	if !deleted {
+		return errors.New("student not found")
+	}
+	return nil
 }
