@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	nethttp "net/http"
 	"strconv"
@@ -44,6 +45,20 @@ func writeJSONError(w nethttp.ResponseWriter, statusCode int, message string) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Println("failed to encode error response:", err)
 	}
+}
+
+func parseStudentID(path string) (int64, error) {
+	idText := strings.TrimPrefix(path, "/students/")
+	if idText == "" {
+		return 0, errors.New("student id is required")
+	}
+
+	id, err := strconv.ParseInt(idText, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid student id")
+	}
+
+	return id, err
 }
 
 func NewRouter() *nethttp.ServeMux {
@@ -121,13 +136,7 @@ func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerF
 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		switch r.Method {
 		case nethttp.MethodGet:
-			idText := strings.TrimPrefix(r.URL.Path, "/students/")
-			if idText == "" {
-				writeJSONError(w, nethttp.StatusBadRequest, "student id is required")
-				return
-			}
-
-			id, err := strconv.ParseInt(idText, 10, 64)
+			id, err := parseStudentID(r.URL.Path)
 			if err != nil {
 				writeJSONError(w, nethttp.StatusBadRequest, "invalid student id")
 				return
@@ -149,15 +158,9 @@ func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerF
 			writeJSON(w, nethttp.StatusOK, response)
 
 		case nethttp.MethodDelete:
-			idText := strings.TrimPrefix(r.URL.Path, "/students/")
-			if idText == "" {
-				writeJSONError(w, nethttp.StatusBadRequest, "student id is required")
-				return
-			}
-
-			id, err := strconv.ParseInt(idText, 10, 64)
+			id, err := parseStudentID(r.URL.Path)
 			if err != nil {
-				writeJSONError(w, nethttp.StatusNotFound, err.Error())
+				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
 				return
 			}
 

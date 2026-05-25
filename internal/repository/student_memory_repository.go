@@ -1,12 +1,14 @@
 package repository
 
 import (
+	"sync"
 	"time"
 
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/domain"
 )
 
 type StudentMemoryRepository struct {
+	mu       sync.Mutex
 	students []domain.Student
 	nextID   int64
 }
@@ -32,10 +34,19 @@ func NewStudentMemoryRepository() *StudentMemoryRepository {
 }
 
 func (r *StudentMemoryRepository) ListStudents() []domain.Student {
-	return r.students
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	students := make([]domain.Student, len(r.students))
+	copy(students, r.students)
+
+	return students
 }
 
 func (r *StudentMemoryRepository) CreateStudent(firstName, lastName string) domain.Student {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	student := domain.Student{
 		ID:        r.nextID,
 		FirstName: firstName,
@@ -50,6 +61,9 @@ func (r *StudentMemoryRepository) CreateStudent(firstName, lastName string) doma
 }
 
 func (r *StudentMemoryRepository) GetStudentByID(id int64) (domain.Student, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for _, student := range r.students {
 		if student.ID == id {
 			return student, true
@@ -60,6 +74,9 @@ func (r *StudentMemoryRepository) GetStudentByID(id int64) (domain.Student, bool
 }
 
 func (r *StudentMemoryRepository) DeleteStudent(id int64) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for index, student := range r.students {
 		if id == student.ID {
 			// в кусок от students до найденного индекса добавляю всё после него
