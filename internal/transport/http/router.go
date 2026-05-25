@@ -58,7 +58,7 @@ func parseStudentID(path string) (int64, error) {
 		return 0, errors.New("invalid student id")
 	}
 
-	return id, err
+	return id, nil
 }
 
 func NewRouter() *nethttp.ServeMux {
@@ -138,7 +138,7 @@ func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerF
 		case nethttp.MethodGet:
 			id, err := parseStudentID(r.URL.Path)
 			if err != nil {
-				writeJSONError(w, nethttp.StatusBadRequest, "invalid student id")
+				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
 				return
 			}
 
