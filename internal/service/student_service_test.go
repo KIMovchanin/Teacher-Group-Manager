@@ -11,7 +11,8 @@ import (
 // Test with fake dependency - лучше, когда есть зависимотсти у тестируемого объекта
 
 type fakeStudentRepository struct {
-	createdStudent domain.Student
+	createStudentCalled bool
+	createdStudent      domain.Student
 }
 
 func (r *fakeStudentRepository) ListStudents() []domain.Student {
@@ -19,6 +20,8 @@ func (r *fakeStudentRepository) ListStudents() []domain.Student {
 }
 
 func (r *fakeStudentRepository) CreateStudent(firstName, lastName string) domain.Student {
+	r.createStudentCalled = true
+
 	r.createdStudent = domain.Student{
 		ID:        1,
 		FirstName: firstName,
@@ -37,35 +40,71 @@ func (r *fakeStudentRepository) DeleteStudent(id int64) bool {
 	return false
 }
 
-func TestStudentService_CreateStudent_ReturnsErrorWhenFirstNameIsEmpty(t *testing.T) {
-	repo := &fakeStudentRepository{}
-	service := NewStudentService(repo)
-
-	_, err := service.CreateStudent("", "Petrov")
-
-	if err == nil {
-		t.Fatal("expected error, got nil")
+func TestStudentService_CreateStudent(t *testing.T) {
+	tests := []struct {
+		name                 string
+		firstName            string
+		lastName             string
+		wantErr              bool
+		wantRepositoryCalled bool
+	}{
+		{
+			name:                 "valid student",
+			firstName:            "Ivan",
+			lastName:             "Petrov",
+			wantErr:              false,
+			wantRepositoryCalled: true,
+		},
+		{
+			name:                 "empty first name",
+			firstName:            "",
+			lastName:             "Petrov",
+			wantErr:              true,
+			wantRepositoryCalled: false,
+		},
+		{
+			name:                 "empty last name",
+			firstName:            "Ivan",
+			lastName:             "",
+			wantErr:              true,
+			wantRepositoryCalled: false,
+		},
 	}
-}
 
-func TestStudentService_CreatedStudent_CreatesStudent(t *testing.T) {
-	repo := &fakeStudentRepository{}
-	service := NewStudentService(repo)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &fakeStudentRepository{}
+			studentService := NewStudentService(repo)
 
-	student, err := service.CreateStudent("Ivan", "Petrov")
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
+			student, err := studentService.CreateStudent(tt.firstName, tt.lastName)
 
-	if student.FirstName != "Ivan" {
-		t.Fatalf("expected first name Ivan, got %s", student.FirstName)
-	}
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
 
-	if student.LastName != "Petrov" {
-		t.Fatalf("expected last name Petrov, got %s", student.LastName)
-	}
+				if repo.createStudentCalled {
+					t.Fatal("expected repository not to be called")
+				}
 
-	if repo.createdStudent.ID != student.ID {
-		t.Fatalf("expected repository to create student with id %d, got %d", student.ID, repo.createdStudent.ID)
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+
+			if !repo.createStudentCalled {
+				t.Fatal("expected repository to be called")
+			}
+
+			if student.FirstName != tt.firstName {
+				t.Fatalf("expected first name %s, got %s", tt.firstName, student.FirstName)
+			}
+
+			if student.LastName != tt.lastName {
+				t.Fatalf("expected last name %s, got %s", tt.lastName, student.LastName)
+			}
+		})
 	}
 }
