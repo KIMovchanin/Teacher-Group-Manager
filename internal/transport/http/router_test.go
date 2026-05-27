@@ -82,3 +82,59 @@ func TestListStudentsHandler(t *testing.T) {
 		t.Fatalf("expected second student Anna, got %s", response[1].FirstName)
 	}
 }
+
+func TestCreateStudentHandler(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       string
+		wantStatus int
+		wantBody   string
+	}{
+		{
+			name:       "valid student",
+			body:       `{"first_name":"John","last_name":"Smith"}`,
+			wantStatus: http.StatusCreated,
+			wantBody:   `"first_name":"John"`,
+		},
+		{
+			name:       "invalid json",
+			body:       `{bad json}`,
+			wantStatus: http.StatusBadRequest,
+			wantBody:   `"error":"invalid json body"`,
+		},
+		{
+			name:       "empty first name",
+			body:       `{"first_name":"","last_name":"Smith"}`,
+			wantStatus: http.StatusBadRequest,
+			wantBody:   `"error":"first name and last name are required"`,
+		},
+		{
+			name:       "empty last name",
+			body:       `{"first_name":"John","last_name":""}`,
+			wantStatus: http.StatusBadRequest,
+			wantBody:   `"error":"first name and last name are required"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			studentRepository := repository.NewStudentMemoryRepository()
+			studentService := service.NewStudentService(studentRepository)
+			handler := createStudentHandler(studentService)
+
+			req := httptest.NewRequest(http.MethodPost, "/students", strings.NewReader(tt.body))
+			rec := httptest.NewRecorder()
+
+			handler(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rec.Code)
+			}
+
+			body := strings.TrimSpace(rec.Body.String())
+			if !strings.Contains(body, tt.wantBody) {
+				t.Fatalf("expected body to contain %s, got %s", tt.wantBody, body)
+			}
+		})
+	}
+}
