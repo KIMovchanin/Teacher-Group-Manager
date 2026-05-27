@@ -6,11 +6,11 @@ import (
 	"log"
 	nethttp "net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/repository"
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 type studentResponse struct {
@@ -47,8 +47,8 @@ func writeJSONError(w nethttp.ResponseWriter, statusCode int, message string) {
 	}
 }
 
-func parseStudentID(path string) (int64, error) {
-	idText := strings.TrimPrefix(path, "/students/")
+func parseStudentID(r *nethttp.Request) (int64, error) {
+	idText := chi.URLParam(r, "id")
 	if idText == "" {
 		return 0, errors.New("student id is required")
 	}
@@ -61,17 +61,18 @@ func parseStudentID(path string) (int64, error) {
 	return id, nil
 }
 
-func NewRouter() *nethttp.ServeMux {
-	mux := nethttp.NewServeMux()
+func NewRouter() nethttp.Handler {
+	r := chi.NewRouter()
 
 	studentRepository := repository.NewStudentMemoryRepository()
 	studentService := service.NewStudentService(studentRepository)
 
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/students", studentsHandler(studentService))
-	mux.HandleFunc("/students/", studentByIDHandler(studentService))
+	r.Get("/health", healthHandler)
 
-	return mux
+	r.HandleFunc("/students", studentsHandler(studentService))
+	r.HandleFunc("/students/{id}", studentByIDHandler(studentService))
+
+	return r
 }
 
 func healthHandler(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -136,7 +137,7 @@ func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerF
 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		switch r.Method {
 		case nethttp.MethodGet:
-			id, err := parseStudentID(r.URL.Path)
+			id, err := parseStudentID(r)
 			if err != nil {
 				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
 				return
@@ -158,7 +159,7 @@ func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerF
 			writeJSON(w, nethttp.StatusOK, response)
 
 		case nethttp.MethodDelete:
-			id, err := parseStudentID(r.URL.Path)
+			id, err := parseStudentID(r)
 			if err != nil {
 				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
 				return

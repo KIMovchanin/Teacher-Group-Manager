@@ -1,10 +1,14 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/KIMovchanin/Teacher-Group-Manager/internal/repository"
+	"github.com/KIMovchanin/Teacher-Group-Manager/internal/service"
 )
 
 func TestHealthHandler(t *testing.T) {
@@ -30,7 +34,7 @@ func TestHealthHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, "/health", nil)
+			req := httptest.NewRequest(tt.method, "/health", nil) // GET /health
 			rec := httptest.NewRecorder()
 
 			healthHandler(rec, req)
@@ -44,5 +48,44 @@ func TestHealthHandler(t *testing.T) {
 				t.Fatalf("expected body %s, got %s", tt.wantBody, body)
 			}
 		})
+	}
+}
+
+func TestStudentsHandler(t *testing.T) {
+	// tests := []struct {
+	// 	name string
+	// 	body string
+	// 	wantStatus int
+	// 	wantBody string
+
+	// }{}
+	studentRepository := repository.NewStudentMemoryRepository()
+	studentService := service.NewStudentService(studentRepository)
+	handler := studentsHandler(studentService)
+
+	req := httptest.NewRequest(http.MethodGet, "/students", nil) // GET /students
+	rec := httptest.NewRecorder()
+
+	handler(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+
+	var response []studentResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+
+	if len(response) != 2 {
+		t.Fatalf("expected 2 students, got %d", len(response))
+	}
+
+	if response[0].FirstName != "Ivan" {
+		t.Fatalf("expected first student Ivan, got %s", response[0].FirstName)
+	}
+
+	if response[1].FirstName != "Anna" {
+		t.Fatalf("expected second student Anna, got %s", response[1].FirstName)
 	}
 }
