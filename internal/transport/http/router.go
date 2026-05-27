@@ -69,8 +69,10 @@ func NewRouter() nethttp.Handler {
 
 	r.Get("/health", healthHandler)
 
-	r.HandleFunc("/students", studentsHandler(studentService))
-	r.HandleFunc("/students/{id}", studentByIDHandler(studentService))
+	r.Get("/students", listStudentsHandler(studentService))
+	r.Post("/students", createStudentHandler(studentService))
+	r.Get("/students/{id}", getStudentByIDHandler(studentService))
+	r.Delete("/students/{id}", deleteStudentHandler(studentService))
 
 	return r
 }
@@ -86,96 +88,183 @@ func healthHandler(w nethttp.ResponseWriter, r *nethttp.Request) {
 
 }
 
-func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+// was for nethttp
+// func studentsHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+// 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+// 		switch r.Method {
+// 		case nethttp.MethodGet:
+// 			students := studentService.ListStudents()
+// 			response := make([]studentResponse, 0, len(students))
+//
+// 			for _, student := range students {
+// 				response = append(response, studentResponse{
+// 					ID:        student.ID,
+// 					FirstName: student.FirstName,
+// 					LastName:  student.LastName,
+// 					CreatedAt: student.CreatedAt.Format(time.RFC3339),
+// 				})
+// 			}
+//
+// 			writeJSON(w, nethttp.StatusOK, response)
+//
+// 		case nethttp.MethodPost:
+// 			var request createStudentRequest
+// 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+// 				writeJSONError(w, nethttp.StatusBadRequest, "invalid json body")
+// 				return
+// 			}
+//
+// 			student, err := studentService.CreateStudent(request.FirstName, request.LastName)
+//
+// 			if err != nil {
+// 				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+// 				return
+// 			}
+//
+// 			response := studentResponse{
+// 				ID:        student.ID,
+// 				FirstName: student.FirstName,
+// 				LastName:  student.LastName,
+// 				CreatedAt: student.CreatedAt.Format(time.RFC3339),
+// 			}
+//
+// 			writeJSON(w, nethttp.StatusCreated, response)
+//
+// 		default:
+// 			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
+// 		}
+// 	}
+// }
+//
+//
+// func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+// 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+// 		switch r.Method {
+// 		case nethttp.MethodGet:
+// 			id, err := parseStudentID(r)
+// 			if err != nil {
+// 				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+// 				return
+// 			}
+//
+// 			student, err := studentService.GetStudentByID(id)
+// 			if err != nil {
+// 				writeJSONError(w, nethttp.StatusNotFound, err.Error())
+// 				return
+// 			}
+//
+// 			response := studentResponse{
+// 				ID:        student.ID,
+// 				FirstName: student.FirstName,
+// 				LastName:  student.LastName,
+// 				CreatedAt: student.CreatedAt.Format(time.RFC3339),
+// 			}
+//
+// 			writeJSON(w, nethttp.StatusOK, response)
+//
+// 		case nethttp.MethodDelete:
+// 			id, err := parseStudentID(r)
+// 			if err != nil {
+// 				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+// 				return
+// 			}
+//
+// 			if err := studentService.DeleteStudent(id); err != nil {
+// 				writeJSONError(w, nethttp.StatusNotFound, err.Error())
+// 				return
+// 			}
+//
+// 			// 204 No Content
+// 			w.WriteHeader(nethttp.StatusNoContent)
+//
+// 		default:
+// 			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
+// 			return
+// 		}
+// 	}
+// }
+
+func listStudentsHandler(studentService *service.StudentService) nethttp.HandlerFunc {
 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
-		switch r.Method {
-		case nethttp.MethodGet:
-			students := studentService.ListStudents()
-			response := make([]studentResponse, 0, len(students))
+		students := studentService.ListStudents()
+		response := make([]studentResponse, 0, len(students))
 
-			for _, student := range students {
-				response = append(response, studentResponse{
-					ID:        student.ID,
-					FirstName: student.FirstName,
-					LastName:  student.LastName,
-					CreatedAt: student.CreatedAt.Format(time.RFC3339),
-				})
-			}
-
-			writeJSON(w, nethttp.StatusOK, response)
-
-		case nethttp.MethodPost:
-			var request createStudentRequest
-			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-				writeJSONError(w, nethttp.StatusBadRequest, "invalid json body")
-				return
-			}
-
-			student, err := studentService.CreateStudent(request.FirstName, request.LastName)
-
-			if err != nil {
-				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
-				return
-			}
-
-			response := studentResponse{
+		for _, student := range students {
+			response = append(response, studentResponse{
 				ID:        student.ID,
 				FirstName: student.FirstName,
 				LastName:  student.LastName,
 				CreatedAt: student.CreatedAt.Format(time.RFC3339),
-			}
-
-			writeJSON(w, nethttp.StatusCreated, response)
-
-		default:
-			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
+			})
 		}
+
+		writeJSON(w, nethttp.StatusOK, response)
 	}
 }
 
-func studentByIDHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+func createStudentHandler(studentService *service.StudentService) nethttp.HandlerFunc {
 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
-		switch r.Method {
-		case nethttp.MethodGet:
-			id, err := parseStudentID(r)
-			if err != nil {
-				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
-				return
-			}
-
-			student, err := studentService.GetStudentByID(id)
-			if err != nil {
-				writeJSONError(w, nethttp.StatusNotFound, err.Error())
-				return
-			}
-
-			response := studentResponse{
-				ID:        student.ID,
-				FirstName: student.FirstName,
-				LastName:  student.LastName,
-				CreatedAt: student.CreatedAt.Format(time.RFC3339),
-			}
-
-			writeJSON(w, nethttp.StatusOK, response)
-
-		case nethttp.MethodDelete:
-			id, err := parseStudentID(r)
-			if err != nil {
-				writeJSONError(w, nethttp.StatusBadRequest, err.Error())
-				return
-			}
-
-			if err := studentService.DeleteStudent(id); err != nil {
-				writeJSONError(w, nethttp.StatusNotFound, err.Error())
-				return
-			}
-
-			// 204 No Content
-			w.WriteHeader(nethttp.StatusNoContent)
-
-		default:
-			writeJSONError(w, nethttp.StatusMethodNotAllowed, "method not allowed")
+		var request createStudentRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, "invalid json body")
 			return
 		}
+
+		student, err := studentService.CreateStudent(request.FirstName, request.LastName)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		response := studentResponse{
+			ID:        student.ID,
+			FirstName: student.FirstName,
+			LastName:  student.LastName,
+			CreatedAt: student.CreatedAt.Format(time.RFC3339),
+		}
+
+		writeJSON(w, nethttp.StatusCreated, response)
+	}
+}
+
+func getStudentByIDHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		id, err := parseStudentID(r)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		student, err := studentService.GetStudentByID(id)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusNotFound, err.Error())
+			return
+		}
+
+		response := studentResponse{
+			ID:        student.ID,
+			FirstName: student.FirstName,
+			LastName:  student.LastName,
+			CreatedAt: student.CreatedAt.Format(time.RFC3339),
+		}
+
+		writeJSON(w, nethttp.StatusOK, response)
+	}
+}
+
+func deleteStudentHandler(studentService *service.StudentService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		id, err := parseStudentID(r)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		if err := studentService.DeleteStudent(id); err != nil {
+			writeJSONError(w, nethttp.StatusNotFound, err.Error())
+			return
+		}
+
+		w.WriteHeader(nethttp.StatusNoContent)
 	}
 }

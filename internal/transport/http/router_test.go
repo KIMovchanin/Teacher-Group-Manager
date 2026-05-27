@@ -51,17 +51,10 @@ func TestHealthHandler(t *testing.T) {
 	}
 }
 
-func TestStudentsHandler(t *testing.T) {
-	// tests := []struct {
-	// 	name string
-	// 	body string
-	// 	wantStatus int
-	// 	wantBody string
-
-	// }{}
+func TestListStudentsHandler(t *testing.T) {
 	studentRepository := repository.NewStudentMemoryRepository()
 	studentService := service.NewStudentService(studentRepository)
-	handler := studentsHandler(studentService)
+	handler := listStudentsHandler(studentService)
 
 	req := httptest.NewRequest(http.MethodGet, "/students", nil) // GET /students
 	rec := httptest.NewRecorder()
