@@ -123,9 +123,113 @@ func TestCreateStudentHandler(t *testing.T) {
 			handler := createStudentHandler(studentService)
 
 			req := httptest.NewRequest(http.MethodPost, "/students", strings.NewReader(tt.body))
+			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 
 			handler(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rec.Code)
+			}
+
+			body := strings.TrimSpace(rec.Body.String())
+			if !strings.Contains(body, tt.wantBody) {
+				t.Fatalf("expected body to contain %s, got %s", tt.wantBody, body)
+			}
+		})
+	}
+}
+
+func TestDeleteStudentHandler(t *testing.T) {
+	tests := []struct {
+		name       string
+		path       string
+		wantStatus int
+		wantBody   string
+	}{
+		{
+			name:       "student deleted",
+			path:       "/students/1",
+			wantStatus: http.StatusNoContent,
+			wantBody:   "",
+		},
+		{
+			name:       "invalid student id",
+			path:       "/students/abc",
+			wantStatus: http.StatusBadRequest,
+			wantBody:   `"error":"invalid student id"`,
+		},
+		{
+			name:       "student not found",
+			path:       "/students/999",
+			wantStatus: http.StatusNotFound,
+			wantBody:   `"error":"student not found"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			router := NewRouter()
+
+			req := httptest.NewRequest(http.MethodDelete, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			router.ServeHTTP(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("expected status %d, got %d", tt.wantStatus, rec.Code)
+			}
+
+			body := strings.TrimSpace(rec.Body.String())
+			if tt.wantBody == "" {
+				if body != "" {
+					t.Fatalf("expected empty body, got %s", body)
+				}
+				return
+			}
+
+			if !strings.Contains(body, tt.wantBody) {
+				t.Fatalf("expected body to contain %s, got %s", tt.wantBody, body)
+			}
+		})
+	}
+}
+
+func TestGetStudentByIDHandler(t *testing.T) {
+	tests := []struct {
+		name       string
+		path       string
+		wantStatus int
+		wantBody   string
+	}{
+		{
+			name:       "student found",
+			path:       "/students/1",
+			wantStatus: http.StatusOK,
+			wantBody:   `"first_name":"Ivan"`,
+		},
+		{
+			name:       "invalid student id",
+			path:       "/students/abc",
+			wantStatus: http.StatusBadRequest,
+			wantBody:   `"error":"invalid student id"`,
+		},
+		{
+			name:       "student not found",
+			path:       "/students/999",
+			wantStatus: http.StatusNotFound,
+			wantBody:   `"error":"student not found"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			router := NewRouter()
+
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			router.ServeHTTP(rec, req)
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("expected status %d, got %d", tt.wantStatus, rec.Code)
