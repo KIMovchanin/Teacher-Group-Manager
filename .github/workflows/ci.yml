@@ -19,6 +19,11 @@ jobs:
         with:
           go-version: '1.22'
 
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
       - name: Run tests
         run: go test ./...
 
