@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 
-	"github.com/KIMovchanin/Teacher-Group-Manager/domain"
 	"github.com/KIMovchanin/Teacher-Group-Manager/internal/domain"
 )
 
@@ -30,7 +29,7 @@ func (r *GroupService) ListGroups() []domain.Group {
 
 func (r *GroupService) CreateGroup(name string) (domain.Group, error) {
 	if name == "" {
-		return domain.Group, errors.New("name is required")
+		return domain.Group{}, errors.New("name is required")
 	}
 
 	return r.groupRepository.CreateGroup(name), nil
@@ -39,7 +38,7 @@ func (r *GroupService) CreateGroup(name string) (domain.Group, error) {
 func (r *GroupService) GetGroupByID(id int64) (domain.Group, error) {
 	group, found := r.groupRepository.GetGroupByID(id)
 	if !found {
-		return domain.Group, errors.New("group not found")
+		return domain.Group{}, errors.New("group not found")
 	}
 	return group, nil
 }
