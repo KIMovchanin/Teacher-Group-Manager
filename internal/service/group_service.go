@@ -23,28 +23,28 @@ func NewGroupService(groupRepository GroupRepository) *GroupService {
 	}
 }
 
-func (r *GroupService) ListGroups() []domain.Group {
-	return r.groupRepository.ListGroups()
+func (s *GroupService) ListGroups() []domain.Group {
+	return s.groupRepository.ListGroups()
 }
 
-func (r *GroupService) CreateGroup(name string) (domain.Group, error) {
+func (s *GroupService) CreateGroup(name string) (domain.Group, error) {
 	if name == "" {
 		return domain.Group{}, errors.New("name is required")
 	}
 
-	return r.groupRepository.CreateGroup(name), nil
+	return s.groupRepository.CreateGroup(name), nil
 }
 
-func (r *GroupService) GetGroupByID(id int64) (domain.Group, error) {
-	group, found := r.groupRepository.GetGroupByID(id)
+func (s *GroupService) GetGroupByID(id int64) (domain.Group, error) {
+	group, found := s.groupRepository.GetGroupByID(id)
 	if !found {
 		return domain.Group{}, errors.New("group not found")
 	}
 	return group, nil
 }
 
-func (r *GroupService) DeleteGroup(id int64) error {
-	found := r.groupRepository.DeleteGroup(id)
+func (s *GroupService) DeleteGroup(id int64) error {
+	found := s.groupRepository.DeleteGroup(id)
 	if !found {
 		return errors.New("group not found")
 	}

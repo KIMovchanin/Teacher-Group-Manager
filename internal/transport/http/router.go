@@ -13,6 +13,13 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// То что пользователь отправляет как запрос
+type createStudentRequest struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+// То что пользователь получает как ответ
 type studentResponse struct {
 	ID        int64  `json:"id"`
 	FirstName string `json:"first_name"`
@@ -20,9 +27,14 @@ type studentResponse struct {
 	CreatedAt string `json:"created_at"`
 }
 
-type createStudentRequest struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+type createGroupRequest struct {
+	Name string `json:"name"`
+}
+
+type groupResponce struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
 }
 
 func writeJSON(w nethttp.ResponseWriter, statusCode int, data any) {
@@ -61,11 +73,28 @@ func parseStudentID(r *nethttp.Request) (int64, error) {
 	return id, nil
 }
 
+func parseGroupID(r *nethttp.Request) (int64, error) {
+	idText := chi.URLParam(r, "id")
+	if idText == "" {
+		return 0, errors.New("student id is required")
+	}
+
+	id, err := strconv.ParseInt(idText, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid group id")
+	}
+
+	return id, nil
+}
+
 func NewRouter() nethttp.Handler {
 	r := chi.NewRouter()
 
 	studentRepository := repository.NewStudentMemoryRepository()
 	studentService := service.NewStudentService(studentRepository)
+
+	groupRepository := repository.NewGroupMemoryRepository()
+	groupService := service.NewGroupService(groupRepository)
 
 	r.Get("/health", healthHandler)
 
@@ -73,6 +102,11 @@ func NewRouter() nethttp.Handler {
 	r.Post("/students", createStudentHandler(studentService))
 	r.Get("/students/{id}", getStudentByIDHandler(studentService))
 	r.Delete("/students/{id}", deleteStudentHandler(studentService))
+
+	r.Get("/groups", listGroupsHandler(groupService))
+	r.Post("/groups", createGroupHandler(groupService))
+	r.Get("/groups/{id}", getGroupByIDHandler(groupService))
+	r.Delete("/groups/{id}", deleteGroupHandler(groupService))
 
 	return r
 }
@@ -262,6 +296,89 @@ func deleteStudentHandler(studentService *service.StudentService) nethttp.Handle
 
 		if err := studentService.DeleteStudent(id); err != nil {
 			writeJSONError(w, nethttp.StatusNotFound, err.Error())
+			return
+		}
+
+		w.WriteHeader(nethttp.StatusNoContent)
+	}
+}
+
+func listGroupsHandler(groupService *service.GroupService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		groups := groupService.ListGroups()
+		responce := make([]groupResponce, 0, len(groups))
+
+		for _, group := range groups {
+			responce = append(responce, groupResponce{
+				ID:        group.ID,
+				Name:      group.Name,
+				CreatedAt: group.CreatedAt.Format(time.RFC3339),
+			})
+		}
+
+		writeJSON(w, nethttp.StatusOK, responce)
+	}
+}
+
+func createGroupHandler(groupService *service.GroupService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		var request createGroupRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, "invalid json body")
+			return
+		}
+
+		group, err := groupService.CreateGroup(request.Name)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		response := groupResponce{
+			ID:        group.ID,
+			Name:      group.Name,
+			CreatedAt: group.CreatedAt.Format(time.RFC3339),
+		}
+
+		writeJSON(w, nethttp.StatusOK, response)
+	}
+}
+
+func getGroupByIDHandler(groupService *service.GroupService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		id, err := parseGroupID(r)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		group, err := groupService.GetGroupByID(id)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		response := groupResponce{
+			ID:        group.ID,
+			Name:      group.Name,
+			CreatedAt: group.CreatedAt.Format(time.RFC3339),
+		}
+
+		writeJSON(w, nethttp.StatusOK, response)
+	}
+}
+
+func deleteGroupHandler(groupService *service.GroupService) nethttp.HandlerFunc {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		id, err := parseGroupID(r)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			return
+		}
+
+		err = groupService.DeleteGroup(id)
+		if err != nil {
+			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
 			return
 		}
 
