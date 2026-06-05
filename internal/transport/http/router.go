@@ -31,7 +31,7 @@ type createGroupRequest struct {
 	Name string `json:"name"`
 }
 
-type groupResponce struct {
+type groupResponse struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`
@@ -76,7 +76,7 @@ func parseStudentID(r *nethttp.Request) (int64, error) {
 func parseGroupID(r *nethttp.Request) (int64, error) {
 	idText := chi.URLParam(r, "id")
 	if idText == "" {
-		return 0, errors.New("student id is required")
+		return 0, errors.New("group id is required")
 	}
 
 	id, err := strconv.ParseInt(idText, 10, 64)
@@ -306,10 +306,10 @@ func deleteStudentHandler(studentService *service.StudentService) nethttp.Handle
 func listGroupsHandler(groupService *service.GroupService) nethttp.HandlerFunc {
 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		groups := groupService.ListGroups()
-		responce := make([]groupResponce, 0, len(groups))
+		responce := make([]groupResponse, 0, len(groups))
 
 		for _, group := range groups {
-			responce = append(responce, groupResponce{
+			responce = append(responce, groupResponse{
 				ID:        group.ID,
 				Name:      group.Name,
 				CreatedAt: group.CreatedAt.Format(time.RFC3339),
@@ -334,13 +334,13 @@ func createGroupHandler(groupService *service.GroupService) nethttp.HandlerFunc 
 			return
 		}
 
-		response := groupResponce{
+		response := groupResponse{
 			ID:        group.ID,
 			Name:      group.Name,
 			CreatedAt: group.CreatedAt.Format(time.RFC3339),
 		}
 
-		writeJSON(w, nethttp.StatusOK, response)
+		writeJSON(w, nethttp.StatusCreated, response)
 	}
 }
 
@@ -354,11 +354,11 @@ func getGroupByIDHandler(groupService *service.GroupService) nethttp.HandlerFunc
 
 		group, err := groupService.GetGroupByID(id)
 		if err != nil {
-			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			writeJSONError(w, nethttp.StatusNotFound, err.Error())
 			return
 		}
 
-		response := groupResponce{
+		response := groupResponse{
 			ID:        group.ID,
 			Name:      group.Name,
 			CreatedAt: group.CreatedAt.Format(time.RFC3339),
@@ -378,7 +378,7 @@ func deleteGroupHandler(groupService *service.GroupService) nethttp.HandlerFunc 
 
 		err = groupService.DeleteGroup(id)
 		if err != nil {
-			writeJSONError(w, nethttp.StatusBadRequest, err.Error())
+			writeJSONError(w, nethttp.StatusNotFound, err.Error())
 			return
 		}
 
