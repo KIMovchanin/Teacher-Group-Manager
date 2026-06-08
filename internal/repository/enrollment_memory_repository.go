@@ -38,9 +38,10 @@ func (r *EnrollmentMemoryRepository) DeleteEnrollment(studentID, groupID int64) 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	for _, enrollment := range r.enrollments {
+	for index, enrollment := range r.enrollments {
 		if enrollment.StudentID == studentID && enrollment.GroupID == groupID {
 			// that means we found student and group with these ids and we deleted the enrollment
+			r.enrollments = append(r.enrollments[:index], r.enrollments[index+1:]...)
 			return true
 		}
 	}
