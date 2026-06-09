@@ -18,6 +18,18 @@ func NewEnrollmentMemoryRepository() *EnrollmentMemoryRepository {
 	}
 }
 
+func (r *EnrollmentMemoryRepository) ListEnrollments() []domain.Enrollment {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	result := make([]domain.Enrollment, 0, len(r.enrollments))
+	for _, enrollment := range r.enrollments {
+		result = append(result, enrollment)
+	}
+
+	return result
+}
+
 // Записать студента в группу
 func (r *EnrollmentMemoryRepository) CreateEnrollment(studentID, groupID int64) (domain.Enrollment, bool) {
 	r.mu.Lock()
