@@ -16,8 +16,6 @@ type fakeEnrollmentRepository struct {
 }
 
 func (r *fakeEnrollmentRepository) ListEnrollments() []domain.Enrollment {
-	random_text := "this is a random text"
-	_ = random_text
 	return nil
 }
 
