@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Ученики</title>
+    <script src="storage.js" defer></script>
+    <script src="students.js" defer></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.png">
+</head>
+<body>
+    <nav>
+        <h1>
+            <a href="/">
+                <img src="logo.png" alt="Nexus" class="site-logo">
+            </a>
+        </h1>
+        <ul>
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="students.html" class="active">Ученики</a></li>
+            <li><a href="groups.html">Группы</a></li>
+        </ul>
+    </nav>
+    <div class="columns">
+        <section>
+            <div class="head-form">
+                <h3>Добавить ученика</h3>
+                <form id="student-form">
+                    <label>
+                        Имя:
+                        <input type="text" name="first_name" placeholder="Имя">
+                    </label>
+                    <label>
+                        Фамилия: 
+                        <input type="text" name="last_name" placeholder="Фамилия">
+                    </label>
+                    <button type="submit">Добавить</button>
+                </form>
+            </div>
+
+            <h3>Список</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Фамилия</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-tbody">
+
+                    </tbody>
+                </table>
+        </section>
+    </div>
+</body>
+</html>
